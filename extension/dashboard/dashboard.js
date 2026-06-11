@@ -7,10 +7,6 @@ const GROUP_COLORS = [
 let _uiLanguage = 'zh-TW';
 const I18N = {
   'zh-TW': {
-    filter: '篩選',
-    assignment: '作業',
-    exam: '考試',
-    all: '全部',
     hideSubmitted: '查看已繳交',
     courses: '課程',
     sync: '同步',
@@ -63,15 +59,9 @@ const I18N = {
     back: '← 返回',
     // list labels
     listAssignment: '作業清單',
-    listExam: '考試清單',
-    listAll: '項目清單',
     // empty item labels
     noPendingAssignment: '無待繳作業',
-    noPendingExam: '無待繳考試',
-    noPendingAll: '無待辦項目',
     noAssignment: '無作業',
-    noExam: '無考試',
-    noAll: '無項目',
     // weight pie
     noGradeInfo: '沒有評分資訊',
     // syllabus
@@ -88,24 +78,7 @@ const I18N = {
     noDesc: '（無描述）',
     submittedBadge: '已繳',
     analyzeBtn: 'AI 分析',
-    // analysis panel
-    analyzing: '正在分析中...',
-    reanalyzing: '正在重新分析...',
     analyzingShort: '分析中',
-    commError: '通訊失敗，請重試',
-    noModelIdMsg: '尚未設定模型 ID',
-    noApiKeyMsg: '尚未設定 AI API 金鑰',
-    settingsPage: '設定頁面',
-    pleaseGoTo: '請先前往',
-    andConfigure: '選擇模型並輸入 API 金鑰',
-    reanalyze: '重新分析',
-    summaryLabel: '摘要',
-    estimatedHoursLabel: '預估作業時間',
-    requirementsLabel: '作業要求',
-    milestonesLabel: '里程碑規劃',
-    tipsLabel: '建議',
-    daysBeforeDuePrefix: '截止前 ',
-    daysBeforeDueSuffix: ' 天',
     // analysis errors
     noApiKeyShort: '請先設定 API 金鑰',
     noModelIdShort: '請先設定模型 ID',
@@ -117,7 +90,6 @@ const I18N = {
     beyond30Days: '30天以上',
     beyond30DaysShort: '30天+',
     noTasks: '無待辦事項',
-    analysisTitle: '作業分析',
     // ui widgets
     editWeight: '編輯',
     weightEditTitle: '編輯評分權重',
@@ -157,10 +129,6 @@ const I18N = {
     wApiLink: '添加 API Key',
   },
   'zh-CN': {
-    filter: '筛选',
-    assignment: '作业',
-    exam: '考试',
-    all: '全部',
     hideSubmitted: '查看已提交',
     courses: '课程',
     sync: '同步',
@@ -206,14 +174,8 @@ const I18N = {
     urgentItems: '件紧急',
     back: '← 返回',
     listAssignment: '作业清单',
-    listExam: '考试清单',
-    listAll: '项目清单',
     noPendingAssignment: '无待交作业',
-    noPendingExam: '无待考考试',
-    noPendingAll: '无待办项目',
     noAssignment: '无作业',
-    noExam: '无考试',
-    noAll: '无项目',
     noGradeInfo: '没有评分信息',
     analyzeWeight: '分析权重',
     updateWeight: '更新权重',
@@ -226,23 +188,7 @@ const I18N = {
     noDesc: '（无描述）',
     submittedBadge: '已交',
     analyzeBtn: 'AI 分析',
-    analyzing: '正在分析中...',
-    reanalyzing: '正在重新分析...',
     analyzingShort: '分析中',
-    commError: '通信失败，请重试',
-    noModelIdMsg: '尚未设置模型 ID',
-    noApiKeyMsg: '尚未设置 AI API 密钥',
-    settingsPage: '设置页面',
-    pleaseGoTo: '请先前往',
-    andConfigure: '选择模型并输入 API 密钥',
-    reanalyze: '重新分析',
-    summaryLabel: '摘要',
-    estimatedHoursLabel: '预估作业时间',
-    requirementsLabel: '作业要求',
-    milestonesLabel: '里程碑规划',
-    tipsLabel: '建议',
-    daysBeforeDuePrefix: '截止前 ',
-    daysBeforeDueSuffix: ' 天',
     noApiKeyShort: '请先设置 API 密钥',
     noModelIdShort: '请先设置模型 ID',
     analysisError: '分析失败，请稍后再试',
@@ -252,7 +198,6 @@ const I18N = {
     beyond30Days: '30天以上',
     beyond30DaysShort: '30天+',
     noTasks: '无待办事项',
-    analysisTitle: '作业分析',
     editWeight: '编辑',
     weightEditTitle: '编辑评分权重',
     weightAddItem: '+ 新增项目',
@@ -290,10 +235,6 @@ const I18N = {
     wApiLink: '添加 API Key',
   },
   en: {
-    filter: 'Filter',
-    assignment: 'Assignments',
-    exam: 'Exams',
-    all: 'All',
     hideSubmitted: 'Show Submitted',
     courses: 'Courses',
     sync: 'Sync',
@@ -339,14 +280,8 @@ const I18N = {
     urgentItems: ' urgent',
     back: '← Back',
     listAssignment: 'Assignments',
-    listExam: 'Exams',
-    listAll: 'All Items',
     noPendingAssignment: 'No pending assignments',
-    noPendingExam: 'No upcoming exams',
-    noPendingAll: 'No items',
     noAssignment: 'No assignments',
-    noExam: 'No exams',
-    noAll: 'No items',
     noGradeInfo: 'No grade info',
     analyzeWeight: 'Analyze Grades',
     updateWeight: 'Update',
@@ -359,23 +294,7 @@ const I18N = {
     noDesc: '(No description)',
     submittedBadge: 'Done',
     analyzeBtn: 'AI Analyze',
-    analyzing: 'Analyzing...',
-    reanalyzing: 'Re-analyzing...',
     analyzingShort: 'Analyzing',
-    commError: 'Connection error, try again',
-    noModelIdMsg: 'Model ID not configured',
-    noApiKeyMsg: 'AI API key not set',
-    settingsPage: 'Settings',
-    pleaseGoTo: 'Go to',
-    andConfigure: 'to select a model and enter your API key',
-    reanalyze: 'Re-analyze',
-    summaryLabel: 'Summary',
-    estimatedHoursLabel: 'Est. Time',
-    requirementsLabel: 'Requirements',
-    milestonesLabel: 'Milestones',
-    tipsLabel: 'Tips',
-    daysBeforeDuePrefix: '',
-    daysBeforeDueSuffix: ' days before due',
     noApiKeyShort: 'Please configure API key',
     noModelIdShort: 'Please configure model ID',
     analysisError: 'Analysis failed, try again',
@@ -385,7 +304,6 @@ const I18N = {
     beyond30Days: 'Later (30d+)',
     beyond30DaysShort: '30 d+',
     noTasks: 'No pending tasks',
-    analysisTitle: 'Assignment Analysis',
     editWeight: 'Edit',
     weightEditTitle: 'Edit Grade Weights',
     weightAddItem: '+ Add Item',
@@ -574,10 +492,9 @@ function bindLanguageMenuActions() {
 let _currentData = {};
 
 // ── 截止日期處理 ──
-function urgencyClass(dueAt, isExamFlag, submitted = false) {
+function urgencyClass(dueAt, submitted = false) {
   if (!dueAt) return 'due-none';
   if (submitted) return 'due-none';
-  if (isExamFlag) return 'due-exam';
   const diff = new Date(dueAt) - Date.now();
   if (diff < 0) return 'due-past';
   const days = diff / 86400000;
@@ -698,10 +615,6 @@ let currentView = 'grid';      // 'grid' | 'course'
 let currentCourseId = null;
 let currentPage = 'week';      // 'week' | 'courses'
 const cardPages = {};           // { [courseId]: pageIndex }
-
-function currentItemLabel() {
-  return tr('assignment');
-}
 
 function currentListLabel() { return tr('listAssignment'); }
 function cardEmptyLabel() { return tr('noPendingAssignment'); }
@@ -1033,7 +946,7 @@ function renderWeekSection(courses, assignments) {
       return '';
     }
     const cards = list.map((a) => {
-      const uClass = urgencyClass(a.due_at, isExam(a));
+      const uClass = urgencyClass(a.due_at);
       return `
         <div class="week-task-card" data-course-id="${a._course.id}">
           <div class="week-task-course">${esc(getCourseName(a._course))}</div>
@@ -1183,7 +1096,7 @@ function renderCardBottom(courseId, sorted, pageIdx) {
 
   const rows = visible.length
     ? visible.map((a) => {
-        const uClass = urgencyClass(a.due_at, isExam(a), isSubmitted(a));
+        const uClass = urgencyClass(a.due_at, isSubmitted(a));
         return `
           <div class="card-row">
             <div class="card-row-title">${esc(a.name)}</div>
@@ -1696,31 +1609,6 @@ function renderSyllabusSection(courseId) {
   return `<div class="syllabus-section" id="syllabus-section-${courseId}"></div>`;
 }
 
-// ── Weight Bar ──
-function renderWeightBar(groups) {
-  if (!groups.length) return '';
-  const total = groups.reduce((s, g) => s + (g.group_weight || 0), 0);
-  if (!total) return '';
-
-  const segments = groups.map((g, i) => {
-    const pct = ((g.group_weight || 0) / total) * 100;
-    return `<div class="weight-bar-segment" style="flex:${pct};background:${GROUP_COLORS[i % GROUP_COLORS.length]}"></div>`;
-  }).join('');
-
-  const legend = groups.map((g, i) => `
-    <div class="legend-item">
-      <div class="legend-dot" style="background:${GROUP_COLORS[i % GROUP_COLORS.length]}"></div>
-      ${esc(g.name)} ${g.group_weight || 0}%
-    </div>`).join('');
-
-  return `
-    <div class="weight-section">
-      <div class="weight-title">評分比重</div>
-      <div class="weight-bar-container">${segments}</div>
-      <div class="weight-legend">${legend}</div>
-    </div>`;
-}
-
 // ── 成績計算器 ──
 function renderGradeCalculator(course, asgns, groups, scores) {
   // Only show for courses with weighted groups
@@ -1858,8 +1746,7 @@ function recalculateGrades(courseId) {
 // ── 作業列 ──
 function renderAssignmentRow(a, groups, courseId) {
   const submitted = isSubmitted(a);
-  const examFlag = isExam(a);
-  const uClass = urgencyClass(a.due_at, examFlag, submitted);
+  const uClass = urgencyClass(a.due_at, submitted);
   const groupName = findGroupName(a, groups);
   const desc = a.description ? stripHtml(a.description) : tr('noDesc');
   const isCustom = !!a._isCustom;
@@ -1867,17 +1754,6 @@ function renderAssignmentRow(a, groups, courseId) {
     ? `<span>${esc(a.name)}</span>`
     : `<span class="assignment-title-link" data-assignment-id="${a.id}" data-course-id="${courseId}">${esc(a.name)}</span>`;
   const customLabel = isCustom ? `<div class="custom-assignment-label">${tr('customAssignment')}</div>` : '';
-
-  // 考試成績顯示
-  let gradeHtml = '';
-  if (examFlag && submitted && a.submission) {
-    if (a.submission.score != null && a.points_possible) {
-      const pct = ((a.submission.score / a.points_possible) * 100).toFixed(1);
-      gradeHtml = `<div class="exam-grade">${a.submission.score} / ${a.points_possible} · ${pct}%</div>`;
-    } else if (a.submission.grade) {
-      gradeHtml = `<div class="exam-grade">${esc(a.submission.grade)}</div>`;
-    }
-  }
 
   return `
     <div class="assignment-item${submitted ? ' submitted' : ''}${isCustom ? ' custom-assignment' : ''}">
@@ -1888,7 +1764,6 @@ function renderAssignmentRow(a, groups, courseId) {
       </div>
       <div class="assignment-right">
         <div class="due-label ${uClass}">${formatDue(a.due_at)}</div>
-        ${gradeHtml}
         ${submitted ? `<div class="submitted-badge">${tr('submittedBadge')}</div>` : ''}
         ${isCustom
           ? `<button class="btn-delete-custom-assignment" title="${tr('deleteCustomTitle')}" data-assignment-id="${esc(String(a.id))}" data-course-id="${courseId}">✕</button>`
@@ -1939,7 +1814,7 @@ document.getElementById('sync-btn').addEventListener('click', () => {
 // ── 讀取資料 ──
 function loadData() {
   chrome.storage.local.get(
-    ['lastSync', 'schoolName', 'canvasBaseUrl', 'courses', 'assignments', 'customAssignments', 'assignmentGroups', 'scores', 'files', 'analysis', 'milestoneChecks', 'syllabusAnalysis', 'courseNames', 'customWeights'],
+    ['lastSync', 'schoolName', 'canvasBaseUrl', 'courses', 'assignments', 'customAssignments', 'assignmentGroups', 'scores', 'syllabusAnalysis', 'courseNames', 'customWeights'],
     (data) => {
       if (!data.courses || !data.courses.length) {
         currentView = 'grid';
@@ -1961,9 +1836,6 @@ function loadData() {
       render({
         ...data,
         scores: data.scores || {},
-        files: data.files || {},
-        analysis: data.analysis || {},
-        milestoneChecks: data.milestoneChecks || {},
         syllabusAnalysis: data.syllabusAnalysis || {},
         courseNames: data.courseNames || {},
         customAssignments: data.customAssignments || {},

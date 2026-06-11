@@ -208,7 +208,6 @@ function getUpcomingTasks(assignments, courseMap) {
         name: a.name,
         due_at: a.due_at,
         course: courseMap[courseId],
-        exam: isExam(a.name),
         html_url: a.html_url || null,
       });
     }
@@ -237,7 +236,7 @@ function renderTasks(tasks, courseNames) {
   }
 
   for (const task of tasks) {
-    const cls = task.exam ? 'exam' : urgencyClass(task.due_at);
+    const cls = urgencyClass(task.due_at);
     const displayName = getDisplayName(task.course, courseNames);
     const dueStr = formatDueShort(task.due_at);
 

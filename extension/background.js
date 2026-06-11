@@ -53,36 +53,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
-  if (message.type === 'FETCH_PDF') {
-    (async () => {
-      try {
-        const res = await fetch(message.url, { credentials: 'include' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const buffer = await res.arrayBuffer();
-        if (buffer.byteLength > 10 * 1024 * 1024) {
-          sendResponse({ success: false, error: '檔案過大（超過 10MB）' });
-          return;
-        }
-        sendResponse({ success: true, base64: arrayBufferToBase64(buffer) });
-      } catch (err) {
-        sendResponse({ success: false, error: err.message });
-      }
-    })();
-    return true;
-  }
-
-  if (message.type === 'ANALYZE_ASSIGNMENT') {
-    handleAnalyze(message, sendResponse);
-    return true;
-  }
-
-  if (message.type === 'GET_ANALYSIS') {
-    chrome.storage.local.get(['analysis'], (data) => {
-      sendResponse({ success: true, analysis: (data.analysis || {})[message.assignmentId] || null });
-    });
-    return true;
-  }
-
   if (message.type === 'ANALYZE_SYLLABUS') {
     handleSyllabusAnalyze(message, sendResponse);
     return true;
@@ -135,137 +105,6 @@ function resolveAiConfig(data) {
   const model = (data.aiModelId || (provider === 'gemini' ? data.geminiModel : '') || '').trim();
   const baseUrl = normalizeBaseUrl(data.aiBaseUrl || defaults.baseUrl);
   return { provider, key, model, baseUrl };
-}
-
-// ── AI Analysis handler ──
-async function handleAnalyze({ assignmentId, courseId }, sendResponse) {
-  try {
-    const data = await chrome.storage.local.get([
-      'aiProvider', 'aiApiKey', 'aiModelId', 'aiBaseUrl',
-      'geminiApiKey', 'geminiModel',
-      'assignments', 'files', 'announcements', 'analysis',
-    ]);
-
-    const ai = resolveAiConfig(data);
-    if (!ai.key) {
-      sendResponse({ success: false, error: 'NO_API_KEY' });
-      return;
-    }
-    if (!ai.model) {
-      sendResponse({ success: false, error: 'NO_MODEL_ID' });
-      return;
-    }
-
-    const assignment = (data.assignments[courseId] || []).find((a) => a.id === assignmentId);
-    if (!assignment) {
-      sendResponse({ success: false, error: 'Assignment not found' });
-      return;
-    }
-
-    const desc = assignment.description ? stripHtmlService(assignment.description) : '（無描述）';
-    const seenIds = new Set();
-    const parts = [];
-
-    // ── Step 1: Assignment attachments (directly attached by teacher) ──
-    try {
-      const full = await fetchJSON(`${BASE_URL}/api/v1/courses/${courseId}/assignments/${assignmentId}`);
-      for (const att of full.attachments || []) {
-        if (seenIds.has(att.id)) continue;
-        seenIds.add(att.id);
-        const pdf = await tryFetchPdf(`${BASE_URL}/api/v1/files/${att.id}/download`);
-        if (pdf) parts.push(pdf);
-      }
-    } catch (_) { }
-
-    // ── Step 2: Canvas file links embedded in description HTML ──
-    for (const fileId of extractCanvasFileIds(assignment.description || '')) {
-      if (seenIds.has(fileId)) continue;
-      seenIds.add(fileId);
-      const pdf = await tryFetchPdf(`${BASE_URL}/api/v1/files/${fileId}/download`);
-      if (pdf) parts.push(pdf);
-    }
-
-    // ── Step 3: AI-assisted selection from course files ──
-    const courseFiles = ((data.files || {})[courseId] || []).filter((f) => !seenIds.has(f.id));
-    if (courseFiles.length > 0) {
-      const selectedIds = await selectRelevantFiles(
-        assignment, desc, courseFiles, ai
-      );
-      for (const fileId of selectedIds) {
-        if (seenIds.has(fileId)) continue;
-        seenIds.add(fileId);
-        const file = courseFiles.find((f) => f.id === fileId);
-        if (!file) continue;
-        const pdf = await tryFetchPdf(file.url || `${BASE_URL}/api/v1/files/${fileId}/download`);
-        if (pdf) parts.push(pdf);
-      }
-    }
-
-    // ── Step 3.5: AI-assisted selection from course announcements ──
-    const courseAnnouncements = ((data.announcements || {})[courseId] || []);
-    if (courseAnnouncements.length > 0) {
-      const selectedAnnIds = await selectRelevantAnnouncements(
-        assignment, desc, courseAnnouncements, ai
-      );
-      for (const annId of selectedAnnIds) {
-        const ann = courseAnnouncements.find((a) => a.id === annId);
-        if (!ann) continue;
-        const body = ann.message ? stripHtmlService(ann.message) : '';
-        if (body) parts.push({
-          type: 'text',
-          text: `Announcement: ${ann.title}\nPosted: ${ann.posted_at || ''}\n\n${body}`,
-        });
-      }
-    }
-
-    // ── Step 4: Assignment text (always included) ──
-    parts.push({
-      type: 'text',
-      text: `Assignment: ${assignment.name}\nDue: ${assignment.due_at || 'N/A'}\n\nDescription: ${desc}`,
-    });
-
-    // ── Early exit: No meaningful content available ──
-    const hasFiles = parts.some(p => p.type === 'pdf');
-    const hasDescription = desc !== '（無描述）' && desc.length > 50;
-    if (!hasFiles && !hasDescription) {
-      const shortResult = {
-        summary: '此作業目前沒有可供分析的資訊（無描述、無附件、無相關檔案或公告）。請查看課程大綱或聯繫老師確認作業要求。',
-        requirements: [],
-        milestones: [],
-        tips: ['查看課程網站或 Canvas 上是否有更新的作業說明', '聯繫助教或老師確認作業內容'],
-        estimatedHours: 0,
-      };
-      const analysis = data.analysis || {};
-      analysis[assignmentId] = { timestamp: new Date().toISOString(), model: 'none', result: shortResult };
-      await chrome.storage.local.set({ analysis });
-      sendResponse({ success: true, result: shortResult, model: 'none' });
-      return;
-    }
-
-    const systemPrompt =
-      'Return ONLY valid JSON with no markdown fences: { "summary": string, "requirements": string[], ' +
-      '"milestones": [{"title": string, "description": string, "daysBeforeDue": number}], ' +
-      '"tips": string[], "estimatedHours": number }';
-
-    let responseText;
-    responseText = await callProvider(parts, systemPrompt, ai);
-
-    let parsed;
-    try {
-      const cleaned = responseText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
-      parsed = JSON.parse(cleaned);
-    } catch (_) {
-      parsed = { summary: responseText, requirements: [], milestones: [], tips: [], estimatedHours: 0 };
-    }
-
-    const analysis = data.analysis || {};
-    analysis[assignmentId] = { timestamp: new Date().toISOString(), model: ai.provider, result: parsed };
-    await chrome.storage.local.set({ analysis });
-
-    sendResponse({ success: true, result: parsed, model: ai.provider });
-  } catch (err) {
-    sendResponse({ success: false, error: err.message });
-  }
 }
 
 // ── Syllabus Analysis ──
@@ -439,14 +278,6 @@ async function fetchJSON(url) {
   return res.json();
 }
 
-function extractCanvasFileIds(html) {
-  const ids = new Set();
-  const re = /\/files\/(\d+)\/(?:download|preview)/g;
-  let m;
-  while ((m = re.exec(html)) !== null) ids.add(parseInt(m[1], 10));
-  return [...ids];
-}
-
 // Extracts all unique Canvas file IDs from any HTML (handles all link formats)
 function extractAllFileIds(html) {
   const ids = new Set();
@@ -454,54 +285,6 @@ function extractAllFileIds(html) {
   let m;
   while ((m = re.exec(html)) !== null) ids.add(m[1]);
   return [...ids];
-}
-
-async function selectRelevantFiles(assignment, desc, courseFiles, ai) {
-  const fileList = courseFiles
-    .slice(0, 60)
-    .map((f) => `${f.id}: ${f.display_name || f.filename}`)
-    .join('\n');
-
-  const prompt =
-    `Assignment: ${assignment.name}\n` +
-    `Description (excerpt): ${desc.slice(0, 600)}\n\n` +
-    `Course files:\n${fileList}\n\n` +
-    `Return a JSON array of file IDs (integers) most likely needed for this assignment. ` +
-    `Return [] if none are relevant. Return ONLY the JSON array.`;
-
-  try {
-    let raw;
-    raw = await callProvider([{ type: 'text', text: prompt }], 'Return only valid JSON, no explanation.', ai);
-    const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
-    const ids = JSON.parse(cleaned);
-    return Array.isArray(ids) ? ids.filter((x) => Number.isInteger(x)) : [];
-  } catch (_) {
-    return [];
-  }
-}
-
-async function selectRelevantAnnouncements(assignment, desc, announcements, ai) {
-  const annList = announcements
-    .slice(0, 30)
-    .map((a) => `${a.id}: ${a.title}`)
-    .join('\n');
-
-  const prompt =
-    `Assignment: ${assignment.name}\n` +
-    `Description (excerpt): ${desc.slice(0, 400)}\n\n` +
-    `Course announcements:\n${annList}\n\n` +
-    `Return a JSON array of announcement IDs (integers) that likely contain information relevant to this assignment. ` +
-    `Return [] if none are relevant. Return ONLY the JSON array.`;
-
-  try {
-    let raw;
-    raw = await callProvider([{ type: 'text', text: prompt }], 'Return only valid JSON, no explanation.', ai);
-    const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
-    const ids = JSON.parse(cleaned);
-    return Array.isArray(ids) ? ids.filter((x) => Number.isInteger(x)) : [];
-  } catch (_) {
-    return [];
-  }
 }
 
 async function tryFetchPdf(url) {
@@ -744,18 +527,6 @@ async function fetchFiles(courseId) {
   }
 }
 
-async function fetchAnnouncements(courseId) {
-  try {
-    return await fetchAllPages(
-      `${BASE_URL}/api/v1/courses/${courseId}/discussion_topics?only_announcements=true&per_page=50`
-    );
-  } catch (err) {
-    if (err.message.includes('403') || err.message.includes('401')) return [];
-    console.warn(`[Due] 課程 ${courseId} 公告拉取失敗:`, err.message);
-    return [];
-  }
-}
-
 function isGenericSchoolName(name) {
   if (!name) return true;
   const n = String(name).trim().toLowerCase();
@@ -865,27 +636,23 @@ async function syncAll() {
   const assignments = {};
   const assignmentGroups = {};
   const files = {};
-  const announcements = {};
 
   await Promise.all(
     courses.map(async (course) => {
       try {
-        const [asgn, groups, courseFiles, courseAnnouncements] = await Promise.all([
+        const [asgn, groups, courseFiles] = await Promise.all([
           fetchAssignments(course.id),
           fetchAssignmentGroups(course.id),
           fetchFiles(course.id),
-          fetchAnnouncements(course.id),
         ]);
         assignments[course.id] = asgn;
         assignmentGroups[course.id] = groups;
         files[course.id] = courseFiles;
-        announcements[course.id] = courseAnnouncements;
       } catch (err) {
         console.error(`[Due] 課程 ${course.id} 同步失敗:`, err);
         assignments[course.id] = [];
         assignmentGroups[course.id] = [];
         files[course.id] = [];
-        announcements[course.id] = [];
       }
     })
   );
@@ -897,7 +664,6 @@ async function syncAll() {
     assignments,
     assignmentGroups,
     files,
-    announcements,
   });
 
   // Auto-analyze grading weights for courses without existing analysis
