@@ -80,6 +80,36 @@
     return out;
   }
 
+  // 設定 modal 按「儲存」後要做什麼：
+  // blocked＝供應商需要 host permission（NVIDIA）卻被拒絕，不寫設定（寫了之後每次同步都只會撞 NO_HOST_PERMISSION）；
+  // saveOnly＝沒填 key，存完就關；saveAndTest＝存完自動測試連線。只少了 PDF 權限不擋（分析照跑，只讀 syllabus 文字）
+  function saveOutcome({ needsHost, granted, hasKey } = {}) {
+    if (!hasKey) return 'saveOnly';
+    if (needsHost && !granted) return 'blocked';
+    return 'saveAndTest';
+  }
+
+  // 供應商錯誤原文 → 給人看的分類（modal 依語言翻成白話，原文留在 title）。
+  // 原文格式見 analysisRunner.callProvider／aiTestConnection 與 providers.js；認不出來回 unknown，不猜
+  function explainAiError(raw) {
+    const s = String(raw || '');
+    const status = (s.match(/\bAPI (\d{3})\b/) || [])[1];
+    const code = status ? Number(status) : 0;
+    if (/NO_API_KEY/.test(s)) return { kind: 'noKey' };
+    const perm = s.match(/NO_HOST_PERMISSION:\s*(\S+)/);
+    if (perm) return { kind: 'noPermission', host: perm[1].replace(/^https?:\/\//, '').replace(/\/\*$/, '') };
+    if (/network\/CORS error/.test(s)) return { kind: 'network' };
+    // 模型名稱錯：Gemini 回 404「models/x is not found」，DeepSeek 回 400「Model Not Exist」
+    if (/model/i.test(s) && /not (be )?found|not exist|does not exist|unknown model|invalid model/i.test(s)) return { kind: 'badModel' };
+    // Gemini 的 key 錯是 400 + API_KEY_INVALID；OpenAI 相容多半是 401
+    if (code === 401 || code === 403 || /API_KEY_INVALID|API key not valid|invalid api.?key|incorrect api key/i.test(s)) return { kind: 'badKey' };
+    if (code === 404) return { kind: 'badModel' };
+    if (code === 402 || code === 429 || /insufficient.?balance|quota|rate.?limit/i.test(s)) return { kind: 'quota' };
+    if (code >= 500 && code <= 599) return { kind: 'server' };
+    if (/Empty response/.test(s)) return { kind: 'empty' };
+    return { kind: 'unknown' };
+  }
+
   // ── 設定 ──
   function resolveConfig(stored) {
     const s = stored && typeof stored === 'object' ? stored : {};
@@ -437,6 +467,8 @@
     USER_PROMPT,
     providerHostPermission,
     requiredOrigins,
+    saveOutcome,
+    explainAiError,
     resolveConfig,
     shouldAnalyze,
     nextRecord,

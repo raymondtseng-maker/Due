@@ -83,6 +83,37 @@ test('requiredOrigins: 所有供應商都要 PDF 權限（純文字供應商改�
   assert.deepEqual(R.requiredOrigins(undefined), [R.PDF_PERMISSION_ORIGIN]);
 });
 
+// ── saveOutcome / explainAiError ──
+test('saveOutcome: 沒填 key 一律只存；需要 host 權限卻被拒 → blocked；其餘存完測試', () => {
+  assert.equal(R.saveOutcome({ needsHost: true, granted: false, hasKey: false }), 'saveOnly');
+  assert.equal(R.saveOutcome({ needsHost: false, granted: false, hasKey: false }), 'saveOnly');
+  assert.equal(R.saveOutcome({ needsHost: true, granted: false, hasKey: true }), 'blocked');
+  assert.equal(R.saveOutcome({ needsHost: true, granted: true, hasKey: true }), 'saveAndTest');
+  // Gemini 等不需要 host 權限：拒絕只少了 PDF 權限，照存照測
+  assert.equal(R.saveOutcome({ needsHost: false, granted: false, hasKey: true }), 'saveAndTest');
+  assert.equal(R.saveOutcome(), 'saveOnly');
+});
+
+test('explainAiError: 各家真實錯誤格式對到白話分類', () => {
+  const k = (s) => R.explainAiError(s).kind;
+  assert.equal(k('NO_API_KEY'), 'noKey');
+  assert.deepEqual(R.explainAiError('nvidia NO_HOST_PERMISSION: https://integrate.api.nvidia.com/*'),
+    { kind: 'noPermission', host: 'integrate.api.nvidia.com' });
+  assert.equal(k('deepseek network/CORS error: Failed to fetch'), 'network');
+  assert.equal(k('gemini API 400: {"error":{"code":400,"message":"API key not valid. Please pass a valid API key.","status":"INVALID_ARGUMENT","details":[{"reason":"API_KEY_INVALID"}]}}'), 'badKey');
+  assert.equal(k('nvidia API 401: {"status":401,"title":"Unauthorized","detail":"Authentication failed"}'), 'badKey');
+  assert.equal(k('qwen API 403: {"error":{"message":"Access denied"}}'), 'badKey');
+  assert.equal(k('gemini API 404: {"error":{"message":"models/gemini-9 is not found for API version v1beta"}}'), 'badModel');
+  assert.equal(k('deepseek API 400: {"error":{"message":"Model Not Exist","type":"invalid_request_error"}}'), 'badModel');
+  assert.equal(k('deepseek API 402: {"error":{"message":"Insufficient Balance"}}'), 'quota');
+  assert.equal(k('gemini API 429: {"error":{"status":"RESOURCE_EXHAUSTED"}}'), 'quota');
+  assert.equal(k('nvidia API 503: Service Unavailable'), 'server');
+  assert.equal(k('Empty response (reasoning_content only)'), 'empty');
+  assert.equal(k('bad response: no JSON'), 'unknown');
+  assert.equal(k(''), 'unknown');
+  assert.equal(k(undefined), 'unknown');
+});
+
 // ── shouldAnalyze ──
 const base = { courseId: 7, customWeights: {}, groups: [], record: undefined, now: NOW };
 
