@@ -28,30 +28,9 @@
   const ANALYSIS_RULES_VERSION = 1;
 
   // hostPermission（選填）：該供應商的端點不回 CORS header，必須靠 Chrome host permission 略過 CORS。
-  // 沒有這個欄位（gemini／qwen／deepseek）代表供應商自己有開 CORS，純 fetch 就能呼叫，不佔任何權限。
+  // 沒有這個欄位（deepseek／gemini／openai）代表供應商自己有開 CORS，純 fetch 就能呼叫，不佔任何權限。
+  // 順序＝設定選單順序；DEFAULT_PROVIDER 是新使用者看到的預設
   const PROVIDERS = {
-    gemini: {
-      label: 'Google Gemini',
-      baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
-      defaultModel: 'gemini-2.5-flash',
-      supportsPdf: true,
-      keyPlaceholder: 'AIza...',
-    },
-    qwen: {
-      label: 'Qwen (通義千問)',
-      baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-      defaultModel: 'qwen-plus',
-      supportsPdf: false,
-      keyPlaceholder: 'sk-...',
-    },
-    deepseek: {
-      label: 'DeepSeek',
-      baseUrl: 'https://api.deepseek.com/v1',
-      // deepseek-chat／deepseek-reasoner 是舊別名，官方公告 2026-07-24 停用，改用 v4 名稱
-      defaultModel: 'deepseek-v4-flash',
-      supportsPdf: false,
-      keyPlaceholder: 'sk-...',
-    },
     nvidia: {
       label: 'NVIDIA NIM',
       baseUrl: 'https://integrate.api.nvidia.com/v1',
@@ -62,7 +41,30 @@
       // 宣告 host permission 可讓 Chrome 直接略過 CORS 檢查（走 optional，儲存設定時才請求）
       hostPermission: 'https://integrate.api.nvidia.com/*',
     },
+    deepseek: {
+      label: 'DeepSeek',
+      baseUrl: 'https://api.deepseek.com/v1',
+      // deepseek-chat／deepseek-reasoner 是舊別名，官方公告 2026-07-24 停用，改用 v4 名稱
+      defaultModel: 'deepseek-v4-flash',
+      supportsPdf: false,
+      keyPlaceholder: 'sk-...',
+    },
+    gemini: {
+      label: 'Google Gemini',
+      baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+      defaultModel: 'gemini-2.5-flash',
+      supportsPdf: true,
+      keyPlaceholder: 'AIza...',
+    },
+    openai: {
+      label: 'OpenAI GPT',
+      baseUrl: 'https://api.openai.com/v1',
+      defaultModel: 'gpt-5.4-mini',
+      supportsPdf: false,
+      keyPlaceholder: 'sk-...',
+    },
   };
+  const DEFAULT_PROVIDER = 'nvidia';
 
   // 該供應商需要哪些 host permission（供 modal 一次請求、runner 檢查是否已授權）
   function providerHostPermission(provider) {
@@ -73,7 +75,7 @@
   // 儲存設定時要一次請求的 origins：供應商自己的 host（若需要）＋ PDF 下載（所有供應商都要）。
   // 純文字供應商現在也會下載 PDF 大綱、用 pdf.js 抽字，故不再看 supportsPdf
   function requiredOrigins(provider) {
-    const p = PROVIDERS[provider] || PROVIDERS.gemini;
+    const p = PROVIDERS[provider] || PROVIDERS[DEFAULT_PROVIDER];
     const out = [];
     if (p.hostPermission) out.push(p.hostPermission);
     out.push(PDF_PERMISSION_ORIGIN);
@@ -113,7 +115,10 @@
   // ── 設定 ──
   function resolveConfig(stored) {
     const s = stored && typeof stored === 'object' ? stored : {};
-    const provider = PROVIDERS[s.provider] ? s.provider : 'gemini';
+    // 沒指定 → 預設供應商；指定了但已不支援（例如 2.5.1 拿掉的 qwen）→ 視為未設定，
+    // 不把那家的 key 送去預設供應商
+    const known = !!PROVIDERS[s.provider];
+    const provider = known ? s.provider : DEFAULT_PROVIDER;
     const def = PROVIDERS[provider];
     const apiKey = typeof s.apiKey === 'string' ? s.apiKey.trim() : '';
     const model = (typeof s.model === 'string' && s.model.trim()) || def.defaultModel;
@@ -124,7 +129,8 @@
     const baseUrl = provider === 'gemini'
       ? def.baseUrl
       : ((/^https:\/\//i.test(custom) && custom) || def.baseUrl);
-    return { provider, apiKey, model, baseUrl, configured: apiKey !== '' };
+    const retired = !known && s.provider != null && s.provider !== '';
+    return { provider, apiKey, model, baseUrl, configured: apiKey !== '' && !retired };
   }
 
   // ── 只跑一次規則 ──
@@ -455,6 +461,7 @@
 
   return {
     PROVIDERS,
+    DEFAULT_PROVIDER,
     MAX_COURSES_PER_RUN,
     MAX_PDF_BYTES,
     MAX_TOTAL_PDF_BYTES,

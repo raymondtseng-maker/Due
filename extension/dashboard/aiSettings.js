@@ -184,10 +184,10 @@
     return (typeof DueGradingRules !== 'undefined' && DueGradingRules.PROVIDERS) || {};
   }
 
-  // 目前表單選的供應商設定；未知值一律退回 gemini（與 loadConfigIntoForm 的正規化一致）
+  // 目前表單選的供應商設定；未知值一律退回預設供應商（與 loadConfigIntoForm 的正規化一致）
   function currentProvider() {
     const all = providers();
-    return all[$('ai-provider').value] || all.gemini || {};
+    return all[$('ai-provider').value] || all[DueGradingRules.DEFAULT_PROVIDER] || {};
   }
 
   function readForm() {
@@ -371,8 +371,10 @@
     if (!chrome.storage?.local?.get) { updateProviderUi(); return; }
     chrome.storage.local.get(['aiConfig'], (data) => {
       const c = (data && data.aiConfig) || {};
-      $('ai-provider').value = providers()[c.provider] ? c.provider : 'gemini';
-      $('ai-api-key').value = c.apiKey || '';
+      const known = !!providers()[c.provider];
+      $('ai-provider').value = known ? c.provider : DueGradingRules.DEFAULT_PROVIDER;
+      // 已不支援的供應商（qwen）的 key 不帶進表單：免得換到預設供應商後直接被送去別家
+      $('ai-api-key').value = known ? (c.apiKey || '') : '';
       $('ai-model').value = c.model || '';
       $('ai-base-url').value = c.baseUrl || '';
       updateProviderUi();
